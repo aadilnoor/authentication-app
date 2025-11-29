@@ -1,0 +1,1 @@
+2025-11-29 15:44:13 ERROR [http-nio-8081-exec-3] c.a.exception.GlobalExceptionHandler - UserNotFoundException at /api/users/email/aail@gmail.com - User not found with email: aail@gmail.com
