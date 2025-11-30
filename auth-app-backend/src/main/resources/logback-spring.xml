@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <!-- Log Pattern with Colors (Console Only) -->
+    <!-- ========================================================= -->
+    <!-- COMMON PATTERNS -->
+    <!-- ========================================================= -->
+
+    <!-- Colored pattern for console -->
     <property name="COLORED_PATTERN"
-              value="%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) [%thread] %cyan(%logger{36}) - %msg%n" />
+              value="%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) [%thread] [%X{requestId}] %cyan(%logger{36}) - %msg%n"/>
 
-    <!-- Normal Pattern for File -->
+    <!-- File pattern without colors -->
     <property name="FILE_PATTERN"
-              value="%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n" />
+              value="%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] [%X{requestId}] %logger{36} - %msg%n"/>
 
-    <!-- Log Directory -->
+    <!-- Main log folder -->
     <property name="LOG_DIR" value="logs"/>
 
+
     <!-- ========================================================= -->
-    <!-- 1) COLORED CONSOLE APPENDER -->
+    <!-- 1) COLORED CONSOLE LOGGING -->
     <!-- ========================================================= -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
@@ -23,15 +28,20 @@
 
 
     <!-- ========================================================= -->
-    <!-- 2) APPLICATION LOG (INFO, WARN, ERROR, DEBUG logs) -->
-    <!-- Daily Rotation + ZIP Compression -->
+    <!-- 2) APPLICATION LOG (ALL NORMAL LOGS) -->
     <!-- ========================================================= -->
     <appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+
         <file>${LOG_DIR}/application.log</file>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Daily zip -->
             <fileNamePattern>${LOG_DIR}/application.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+
+            <!-- Keep only 30 days -->
             <maxHistory>30</maxHistory>
+
+            <!-- Optional safety cap -->
             <totalSizeCap>5GB</totalSizeCap>
         </rollingPolicy>
 
@@ -42,9 +52,10 @@
 
 
     <!-- ========================================================= -->
-    <!-- 3) ERROR LOG (ONLY ERROR level logs) -->
+    <!-- 3) ERROR-ONLY LOG FILE -->
     <!-- ========================================================= -->
     <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+
         <file>${LOG_DIR}/error.log</file>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -53,11 +64,11 @@
             <totalSizeCap>3GB</totalSizeCap>
         </rollingPolicy>
 
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+        <encoder>
             <pattern>${FILE_PATTERN}</pattern>
         </encoder>
 
-        <!-- Filter: Only ERROR logs go here -->
+        <!-- Filter ERROR logs only -->
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
             <onMatch>ACCEPT</onMatch>
@@ -67,7 +78,33 @@
 
 
     <!-- ========================================================= -->
-    <!-- ROOT LOGGER (FINAL CONFIG) -->
+    <!-- 4) AUDIT LOG FILE (Custom Audit Logging) -->
+    <!-- ========================================================= -->
+    <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+        <file>${LOG_DIR}/audit.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/audit.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} AUDIT [%X{requestId}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+
+    <!-- ========================================================= -->
+    <!-- 5) LOGGER FOR AUDIT (Custom Logger) -->
+    <!-- ========================================================= -->
+    <logger name="AUDIT" level="INFO" additivity="false">
+        <appender-ref ref="AUDIT_FILE"/>
+    </logger>
+
+
+    <!-- ========================================================= -->
+    <!-- 6) ROOT LOGGER -->
     <!-- ========================================================= -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
