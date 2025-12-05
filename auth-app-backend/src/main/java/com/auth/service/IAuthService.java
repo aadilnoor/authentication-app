@@ -13,5 +13,7 @@ public interface IAuthService {
 	AuthResponse refresh(String refreshToken);
 
 	void logout(String email);
+	void logout(String email, String accessToken);
+
 
 }

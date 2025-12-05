@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
+ 
 	private final IAuthService authService;
 
 	@PostMapping("/register")
@@ -53,6 +54,18 @@ public class AuthController {
 		authService.logout(email);
 
 		return ResponseEntity.ok(new ApiResponse<>(true, "Logged out", "Logout successful"));
+	}
+
+	@PostMapping("/invalidate")
+	public ResponseEntity<ApiResponse<String>> logoutAndInvalidate(
+	        @RequestParam String email,
+	        @RequestHeader("Authorization") String authHeader) {
+
+	    String token = authHeader.replace("Bearer ", "");
+
+	    authService.logout(email, token);
+
+	    return ResponseEntity.ok(new ApiResponse<>(true, "Logout successful", "User logged out"));
 	}
 
 }

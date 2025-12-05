@@ -21,6 +21,10 @@ public class JwtService {
 
 	@Value("${jwt.refresh-expiration-ms}")
 	private long refreshExpirationMs;
+	
+	public long getAccessTokenExpiry() {
+	    return accessExpirationMs;
+	}
 
 	private Key getSigningKey() {
 		byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);

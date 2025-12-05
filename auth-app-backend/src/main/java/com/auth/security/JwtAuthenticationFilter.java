@@ -1,18 +1,23 @@
 package com.auth.security;
 
-import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
-import java.io.IOException;
+import com.auth.service.impl.TokenBlacklistService;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -20,6 +25,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtService jwtService;
 	private final CustomUserDetailsService userDetailsService;
+	private final TokenBlacklistService blacklistService;
+
 	private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
 	@Override
@@ -36,7 +43,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		}
 
 		token = authHeader.substring(7);
-		try {
+		
+		
+	    if (blacklistService.isBlacklisted(token)) {
+	        log.warn("Blocked token used: {}", token);
+	        filterChain.doFilter(request, response);
+	        return;
+	    }
+		
+	    try {
 			username = jwtService.extractUsername(token);
 		} catch (Exception ex) {
 			log.debug("JWT parse error: {}", ex.getMessage());

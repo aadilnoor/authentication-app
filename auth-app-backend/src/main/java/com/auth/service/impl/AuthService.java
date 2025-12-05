@@ -15,6 +15,7 @@ import com.auth.repository.UserRepository;
 import com.auth.security.JwtService;
 import com.auth.service.IAuthService;
 import com.auth.service.IRefreshTokenService;
+import com.auth.service.ITokenBlacklistService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class AuthService implements IAuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
 	private final IRefreshTokenService refreshTokenService;
+	private final ITokenBlacklistService tokenBlacklistService;
 
 	@Override
 	public UserDto register(UserDto userDto) {
@@ -82,6 +84,18 @@ public class AuthService implements IAuthService {
 		UserDto user = userMapper.toDto(userRepository.findByEmail(verified.getUserEmail()).orElseThrow());
 
 		return new AuthResponse(newAccessToken, newRefreshToken.getToken(), user);
+	}
+
+	@Override
+	public void logout(String email, String accessToken) {
+
+	    // Delete refresh tokens
+	    refreshTokenService.revokeAllUserTokens(email);
+
+	    // Blacklist access token
+	    tokenBlacklistService.blacklist(accessToken, jwtService.getAccessTokenExpiry());
+
+	    log.info("User {} logged out. Access token invalidated.", email);
 	}
 
 	@Override
