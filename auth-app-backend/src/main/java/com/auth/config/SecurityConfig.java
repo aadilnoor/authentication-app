@@ -51,7 +51,7 @@ public class SecurityConfig {
 				.exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthEntryPoint)
 						.accessDeniedHandler(jwtAccessDeniedHandler))
 				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**")
+				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**","/api/cookie-auth/**","/v3/api-docs/**", "/swagger-ui/**")
 						.permitAll().anyRequest().authenticated())
 				.userDetailsService(userDetailsService)
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

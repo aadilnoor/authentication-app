@@ -21,7 +21,8 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
 
+
 jwt:
- access-expiration-ms: 900000       # 15 minutes
- refresh-expiration-ms: 604800000   # 7 days
- secret: "uB7z1o9c2f3RkLmZ8JpQ2sV7yFt9Dh4xLk8pQz1aBsM="
+  access-expiration-ms: 900000
+  refresh-expiration-ms: 604800000
+  secret: "uB7z1o9c2f3RkLmZ8JpQ2sV7yFt9Dh4xLk8pQz1aBsM="

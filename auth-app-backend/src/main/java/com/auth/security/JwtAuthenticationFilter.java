@@ -23,52 +23,67 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-	private final JwtService jwtService;
-	private final CustomUserDetailsService userDetailsService;
-	private final TokenBlacklistService blacklistService;
+    private final JwtService jwtService;
+    private final CustomUserDetailsService userDetailsService;
+    private final TokenBlacklistService blacklistService;
 
-	private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-	@Override
-	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-			throws ServletException, IOException {
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
-		final String authHeader = request.getHeader("Authorization");
-		final String token;
-		final String username;
+        final String authHeader = request.getHeader("Authorization");
+        final String token;
+        final String username;
 
-		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-			filterChain.doFilter(request, response);
-			return;
-		}
+        // No token? Continue filter chain.
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-		token = authHeader.substring(7);
-		
-		
-	    if (blacklistService.isBlacklisted(token)) {
-	        log.warn("Blocked token used: {}", token);
-	        filterChain.doFilter(request, response);
-	        return;
-	    }
-		
-	    try {
-			username = jwtService.extractUsername(token);
-		} catch (Exception ex) {
-			log.debug("JWT parse error: {}", ex.getMessage());
-			filterChain.doFilter(request, response);
-			return;
-		}
+        token = authHeader.substring(7);
 
-		if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-			UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-			if (jwtService.isTokenValid(token, userDetails.getUsername())) {
-				UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
-						null, userDetails.getAuthorities());
-				authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-				SecurityContextHolder.getContext().setAuthentication(authToken);
-			}
-		}
+        // Step 1: Extract username (validate signature & expiry)
+        try {
+            username = jwtService.extractUsername(token);
+        } catch (Exception ex) {
+            log.debug("JWT parse error: {}", ex.getMessage());
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-		filterChain.doFilter(request, response);
-	}
+        // Step 2: Validate token
+        if (!jwtService.isTokenValid(token, username)) {
+            log.warn("Invalid or expired token used.");
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Step 3: Check blacklist AFTER validation
+        if (blacklistService.isBlacklisted(token)) {
+            log.warn("Blocked token used: {}", token);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Step 4: Authenticate user into SecurityContext
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+            UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+        }
+
+        filterChain.doFilter(request, response);
+    }
 }
